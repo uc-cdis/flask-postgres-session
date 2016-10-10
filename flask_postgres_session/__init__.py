@@ -88,7 +88,7 @@ class PostgresSessionInterface(SessionInterface):
             session._session.updated_datetime
             + app.config.get('SESSION_TIMEOUT', SESSION_TIMEOUT),
             session._session.created_datetime
-            + app.config['SESSION_LIFETIME'], SESSION_LIFETIME)
+            + app.config.get('SESSION_LIFETIME', SESSION_LIFETIME))
 
     def save_session(self, app, session, response):
         domain = self.get_cookie_domain(app)
