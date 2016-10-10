@@ -29,6 +29,7 @@ def user_session_model(table_name="user_session", Base=declarative_base()):
 class PostgresSession(SessionMixin):
     def __init__(self, session):
         self._session = session
+        self.modified = False
 
     @property
     def sid(self):
@@ -77,7 +78,7 @@ class PostgresSessionInterface(SessionInterface):
                 .filter(self.session_model.key == sid).first())
             if not rv:
                 rv = self.session_model(key=sid, val={})
-        current_session.merge(rv)
+        
         return PostgresSession(rv)
 
     def get_expiration_time(self, app, session):
@@ -86,19 +87,24 @@ class PostgresSessionInterface(SessionInterface):
         # in for SESSION_LIFETIME seconds
         return min(
             session._session.updated_datetime
-            + app.config.get('SESSION_TIMEOUT', SESSION_TIMEOUT),
+            + (app.config.get('SESSION_TIMEOUT') or SESSION_TIMEOUT),
             session._session.created_datetime
-            + app.config.get('SESSION_LIFETIME', SESSION_LIFETIME))
+            + (app.config.get('SESSION_LIFETIME') or SESSION_LIFETIME))
 
     def save_session(self, app, session, response):
+
         domain = self.get_cookie_domain(app)
-        session._session = current_session.merge(session._session)
-        current_session.commit()
-        cookie_exp = self.get_expiration_time(app, session)
+        if session.modified:
+            session._session = current_session.merge(session._session)
+            current_session.commit()
 
-        if cookie_exp > datetime.utcnow():  # delete expired session
-            current_session.delete(session._session)
+        if session._session.updated_datetime:
+            # if the session has updated datetime then it's a session from db
+            cookie_exp = self.get_expiration_time(app, session)
 
-        response.set_cookie(
-            app.session_cookie_name, session.sid,
-            expires=cookie_exp, httponly=True, domain=domain)
+            if cookie_exp > datetime.utcnow():  # delete expired session
+                current_session.delete(session._session)
+
+            response.set_cookie(
+                app.session_cookie_name, session.sid,
+                expires=cookie_exp, httponly=True, domain=domain)
