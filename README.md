@@ -32,3 +32,4 @@ def test():
     if not session.get('testdata'):
         session['testdata'] = 'abc'
 ```
+The default session's timeout (max inactive session lifetime) is 30 min and lifetime (max session lifetime) is 8 h, if you want to change that, you should define SESSION_TIMEOUT/SESSION_LIFETIME in your flask app.config.

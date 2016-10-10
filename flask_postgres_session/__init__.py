@@ -1,4 +1,5 @@
 from flask.sessions import SessionInterface, SessionMixin
+from datetime import timedelta
 from uuid import uuid4
 from datetime import datetime
 from flask_sqlalchemy_session import current_session
@@ -6,6 +7,11 @@ from sqlalchemy import Integer, String, Column, Boolean, Text, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 
 from sqlalchemy.ext.declarative import declarative_base
+
+# 30 minutes
+SESSION_TIMEOUT = timedelta(seconds=1800)
+# 8 hours
+SESSION_LIFETIME = timedelta(seconds=28800)
 
 
 def user_session_model(table_name="user_session", Base=declarative_base()):
@@ -75,9 +81,14 @@ class PostgresSessionInterface(SessionInterface):
         return PostgresSession(rv)
 
     def get_expiration_time(self, app, session):
+        # the session expire if the user is inactive for
+        # SESSION_TIMEOUT seconds or the user has been active
+        # in for SESSION_LIFETIME seconds
         return min(
-            session._session.updated_datetime + app.config['SESSION_TIMEOUT'],
-            session._session.created_datetime + app.config['SESSION_LIFETIME'])
+            session._session.updated_datetime
+            + app.config.get('SESSION_TIMEOUT', SESSION_TIMEOUT),
+            session._session.created_datetime
+            + app.config['SESSION_LIFETIME'], SESSION_LIFETIME)
 
     def save_session(self, app, session, response):
         domain = self.get_cookie_domain(app)
