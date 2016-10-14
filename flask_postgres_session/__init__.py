@@ -1,4 +1,5 @@
 from flask.sessions import SessionInterface, SessionMixin
+from sqlalchemy.orm.attributes import flag_modified
 from datetime import timedelta
 from uuid import uuid4
 from datetime import datetime
@@ -42,14 +43,13 @@ class PostgresSession(SessionMixin):
 
     def __setitem__(self, key, value):
         self._session.val[key] = value
-        self._session.val = dict(self._session.val)
         self.modified = True
+        flag_modified(self._session, 'val')
 
     def __delitem__(self, key):
         del self._session.val[key]
-        self._session.val = dict(self._session.val)
-
         self.modified = True
+        flag_modified(self._session, 'val')
 
     def __iter__(self):
         for key in self._session.val:
@@ -92,11 +92,11 @@ class PostgresSessionInterface(SessionInterface):
 
     def save_session(self, app, session, response):
         domain = self.get_cookie_domain(app)
-        if session.modified:
+        if session._session.updated_datetime:
             session._session = current_session.merge(session._session)
+            session._session.updated_datetime = datetime.utcnow()
             current_session.commit()
 
-        if session._session.updated_datetime:
             # if the session has updated datetime then it's a session from db
             cookie_exp = self.get_expiration_time(app, session)
             if cookie_exp < datetime.utcnow():  # delete expired session
