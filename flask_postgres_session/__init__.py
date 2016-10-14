@@ -5,7 +5,6 @@ from datetime import datetime
 from flask_sqlalchemy_session import current_session
 from sqlalchemy import Integer, String, Column, Boolean, Text, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
-
 from sqlalchemy.ext.declarative import declarative_base
 
 # 30 minutes
@@ -78,7 +77,7 @@ class PostgresSessionInterface(SessionInterface):
                 .filter(self.session_model.key == sid).first())
             if not rv:
                 rv = self.session_model(key=sid, val={})
-        
+
         return PostgresSession(rv)
 
     def get_expiration_time(self, app, session):
@@ -92,7 +91,6 @@ class PostgresSessionInterface(SessionInterface):
             + (app.config.get('SESSION_LIFETIME') or SESSION_LIFETIME))
 
     def save_session(self, app, session, response):
-
         domain = self.get_cookie_domain(app)
         if session.modified:
             session._session = current_session.merge(session._session)
@@ -101,8 +99,7 @@ class PostgresSessionInterface(SessionInterface):
         if session._session.updated_datetime:
             # if the session has updated datetime then it's a session from db
             cookie_exp = self.get_expiration_time(app, session)
-
-            if cookie_exp > datetime.utcnow():  # delete expired session
+            if cookie_exp < datetime.utcnow():  # delete expired session
                 current_session.delete(session._session)
 
             response.set_cookie(
