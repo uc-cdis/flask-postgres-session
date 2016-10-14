@@ -92,7 +92,7 @@ class PostgresSessionInterface(SessionInterface):
 
     def save_session(self, app, session, response):
         domain = self.get_cookie_domain(app)
-        if session._session.updated_datetime:
+        if session._session.updated_datetime or session.modified:
             session._session = current_session.merge(session._session)
             session._session.updated_datetime = datetime.utcnow()
             current_session.commit()
