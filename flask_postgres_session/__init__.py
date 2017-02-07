@@ -4,7 +4,7 @@ from datetime import timedelta
 from uuid import uuid4
 from datetime import datetime
 from flask_sqlalchemy_session import current_session
-from sqlalchemy import Integer, String, Column, Boolean, Text, DateTime
+from sqlalchemy import String, Column, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -30,13 +30,26 @@ class PostgresSession(SessionMixin):
     def __init__(self, session):
         self._session = session
         self.modified = False
+        super(PostgresSession, self).__init__()
 
     @property
     def sid(self):
+        '''
+        session id, which is the primary key for the session
+        '''
         return self._session.key
 
     def get(self, key, *args):
+        '''
+        get a value from session json
+        '''
         return self._session.val.get(key, *args)
+
+    def clear(self):
+        '''
+        clear current session
+        '''
+        self._session.val = dict()
 
     def __getitem__(self, key):
         return self._session.val[key]
