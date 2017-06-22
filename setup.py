@@ -5,7 +5,7 @@ setup(
     install_requires=[
         "Flask==0.12.1",
         "psycopg2==2.6.1",
-        "sqlalchemy==1.1.9",
+        "sqlalchemy==0.9.9",
         "Flask-SQLAlchemy-Session==1.1"
     ],
     packages=find_packages(),
