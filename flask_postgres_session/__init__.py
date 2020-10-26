@@ -22,7 +22,9 @@ def user_session_model(table_name="user_session", Base=declarative_base()):
         val = Column(JSONB, default={})
         created_datetime = Column(DateTime, default=datetime.utcnow)
         updated_datetime = Column(
-            DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+            DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        )
+
     return UserSession
 
 
@@ -34,21 +36,21 @@ class PostgresSession(SessionMixin):
 
     @property
     def sid(self):
-        '''
+        """
         session id, which is the primary key for the session
-        '''
+        """
         return self._session.key
 
     def get(self, key, *args):
-        '''
+        """
         get a value from session json
-        '''
+        """
         return self._session.val.get(key, *args)
 
     def clear(self):
-        '''
+        """
         clear current session
-        '''
+        """
         self._session.val = dict()
 
     def __getitem__(self, key):
@@ -57,12 +59,12 @@ class PostgresSession(SessionMixin):
     def __setitem__(self, key, value):
         self._session.val[key] = value
         self.modified = True
-        flag_modified(self._session, 'val')
+        flag_modified(self._session, "val")
 
     def __delitem__(self, key):
         del self._session.val[key]
         self.modified = True
-        flag_modified(self._session, 'val')
+        flag_modified(self._session, "val")
 
     def __iter__(self):
         for key in self._session.val:
@@ -73,7 +75,6 @@ class PostgresSession(SessionMixin):
 
 
 class PostgresSessionInterface(SessionInterface):
-
     def __init__(self, session_model):
         super(PostgresSessionInterface, self).__init__()
         self.session_model = session_model
@@ -87,7 +88,9 @@ class PostgresSessionInterface(SessionInterface):
         else:
             rv = (
                 current_session.query(self.session_model)
-                .filter(self.session_model.key == sid).first())
+                .filter(self.session_model.key == sid)
+                .first()
+            )
             if not rv:
                 rv = self.session_model(key=sid, val={})
 
@@ -99,9 +102,10 @@ class PostgresSessionInterface(SessionInterface):
         # in for SESSION_LIFETIME seconds
         return min(
             session._session.updated_datetime
-            + (app.config.get('SESSION_TIMEOUT') or SESSION_TIMEOUT),
+            + (app.config.get("SESSION_TIMEOUT") or SESSION_TIMEOUT),
             session._session.created_datetime
-            + (app.config.get('SESSION_LIFETIME') or SESSION_LIFETIME))
+            + (app.config.get("SESSION_LIFETIME") or SESSION_LIFETIME),
+        )
 
     def save_session(self, app, session, response):
         domain = self.get_cookie_domain(app)
@@ -116,5 +120,9 @@ class PostgresSessionInterface(SessionInterface):
                 current_session.delete(session._session)
 
             response.set_cookie(
-                app.session_cookie_name, session.sid,
-                expires=cookie_exp, httponly=True, domain=domain)
+                app.session_cookie_name,
+                session.sid,
+                expires=cookie_exp,
+                httponly=True,
+                domain=domain,
+            )
